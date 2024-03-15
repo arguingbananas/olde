@@ -1,81 +1,68 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, abort
 import feedparser
-from openai import OpenAI
+from ollama import Client
 import os
 
 # Read the feed limit from the environment variable or set a default value
 FEED_LIMIT = int(os.environ.get("FEED_LIMIT", "5"))  # Default to 5 articles
 
-# Initialize using https://github.com/Mozilla-Ocho/llamafile
-client = OpenAI(
-    base_url="http://localhost:8080/v1",  # "http://<Your api-server IP>:port"
-    api_key="sk-no-key-required",
-)
+HOST_ADDRESS = os.environ.get(
+    "HOST_ADDRESS", "http://localhost:11434"
+)  # Default to localhost
 
 app = Flask(__name__)
 
+client = Client(host=HOST_ADDRESS)
 
-def translate_text(input_text, target_language="fr"):
 
-    # Define the prompt for translation
-    prompt = "Translate the following English text into Shakespearean English"
+def translate_text(input_text, target_language="French", model="phi"):
+    try:
+        # Define the prompt for translation
+        prompt = f"Translate the user input into {target_language}."
 
-    response = client.chat.completions.create(
-        model="LLaMA_CPP",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": input_text},
-        ],
-    )
-    return response.choices[0].message.content
+        response = client.chat(
+            model=model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": input_text},
+            ],
+        )
+        return response["message"]["content"]
+    except Exception as e:
+        # Handle translation errors
+        return f"Translation Error: {str(e)}"
 
 
 def translate_feed(feed):
     translated_feed = {}
 
-    # Translate feed title and description
-    translated_feed["title"] = translate_text(feed["title"])
-    translated_feed["description"] = translate_text(feed["description"])
-    translated_feed["link"] = feed["link"]
-    translated_feed["entries"] = []
+    try:
+        # Translate feed title and description
+        translated_feed["title"] = translate_text(feed["title"])
+        translated_feed["description"] = translate_text(feed["description"])
+        translated_feed["link"] = feed["link"]
+        translated_feed["entries"] = []
 
-    # Translate and limit the number of entries in the feed
-    for entry in feed["entries"][:FEED_LIMIT]:
-        translated_entry = {
-            "title": translate_text(entry["title"]),
-            "summary": translate_text(entry["summary"]),
-        }
-        translated_feed["entries"].append(translated_entry)
+        # Translate and limit the number of entries in the feed
+        for entry in feed["entries"][:FEED_LIMIT]:
+            translated_entry = {
+                "title": translate_text(entry["title"]),
+                "summary": translate_text(entry.get("summary", "")),
+            }
+            translated_feed["entries"].append(translated_entry)
 
-    return translated_feed
+        return translated_feed
+    except Exception as e:
+        # Handle translation errors
+        abort(500, f"Translation Error: {str(e)}")
 
 
 @app.route("/")
 def index():
     rss_feed_url = "http://feeds.bbci.co.uk/news/rss.xml"
-    feed = read_rss(rss_feed_url)
+    feed = feedparser.parse(rss_feed_url)
     translated_feed = translate_feed(feed)
     return render_template("index.html", feed=translated_feed)
-
-
-def read_rss(feed_url):
-    # Parse the RSS feed
-    feed = feedparser.parse(feed_url)
-
-    # Prepare the feed data
-    feed_data = {
-        "title": feed.feed.title,
-        "description": feed.feed.description,
-        "link": feed.feed.link,
-        "entries": [],
-    }
-
-    # Limit the number of articles fetched
-    for entry in feed.entries[:FEED_LIMIT]:
-        entry_data = {"title": entry.title, "summary": entry.get("summary", "")}
-        feed_data["entries"].append(entry_data)
-
-    return feed_data
 
 
 if __name__ == "__main__":
