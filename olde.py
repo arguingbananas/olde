@@ -1,4 +1,4 @@
-"""Olde: read the news in Chaucerian Middle English.
+"""Olde: read the news in the English of the King James Bible.
 
 One background worker polls the feed and translates new entries. Page views only
 read saved state, so visitors never cause a request to the feed or to Claude.
@@ -35,11 +35,11 @@ WORKER_TICK_SECONDS = 30
 BATCH_SIZE = 25
 
 SYSTEM_PROMPT = """\
-You translate modern English news headlines and summaries into readable \
-Chaucerian Middle English, as written in London around 1390. Use real period \
-spelling, vocabulary and grammar, such as "whan", "eek", "hath", "-eth" verbs and \
-"y-" participles, but stay close enough that a patient modern reader can follow \
-it without a glossary.
+You translate modern English news headlines and summaries into the English of \
+the King James Bible, as written around 1611. Use its grammar and vocabulary, \
+such as "hath", "doth", "-eth" verbs, "thou" and "thee" when someone is \
+addressed, "unto", "wherefore" and "thereby", but keep modern spelling so any \
+modern reader can follow it with ease.
 
 This is a translation of real news, so stay faithful to it. Do not add, remove, \
 soften or change any fact. Keep names, places, numbers and dates recognizable. \

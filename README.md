@@ -1,11 +1,12 @@
 # Olde
 
-What would modern news look like in the English of Chaucer?
+What would modern news look like in the English of the King James Bible?
 
 Olde reads an English-language RSS feed and shows every headline and summary in
-readable Chaucerian Middle English, translated by Claude. Each story links to the
-original, and the modern English text is one click away. This is imitation Middle
-English for fun, not historically exact scholarship.
+King James English, translated by Claude: period grammar such as "hath", "-eth"
+and "unto", with modern spelling so it stays easy to read. Each story links to
+the original, and the modern English text is one click away. This is imitation
+Early Modern English for fun, not historically exact scholarship.
 
 ## Run it
 
@@ -17,7 +18,7 @@ export ANTHROPIC_API_KEY=...
 ```
 
 Then open http://127.0.0.1:5000. Stories appear in modern English first and
-switch to Middle English as their translations finish.
+switch to King James English as their translations finish.
 
 Run a single process only, because each process would poll the feed on its own.
 

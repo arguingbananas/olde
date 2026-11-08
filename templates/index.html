@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>Olde News</h1>
-        <p class="tagline">The tidings of this day, in the tonge of Chaucer</p>
+        <p class="tagline">The tidings of this day, set forth in the English of King James</p>
     </header>
 
     {% if feed.feed_error %}<p class="notice">{{ feed.feed_error }}</p>{% endif %}
@@ -46,7 +46,7 @@
             {% if feed.link %}<a href="{{ feed.link }}">{{ feed.title }}</a>{% else %}{{ feed.title }}{% endif %}.
             Each headline links to the original story.</p>
         {% endif %}
-        <p>This is an unofficial machine translation into imitation Middle English. It may contain errors, so check the original before relying on it. It is not affiliated with or endorsed by the source.</p>
+        <p>This is an unofficial machine translation into imitation King James English. It may contain errors, so check the original before relying on it. It is not affiliated with or endorsed by the source.</p>
     </footer>
 </body>
 </html>
