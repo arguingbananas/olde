@@ -23,7 +23,12 @@ from flask import Flask, render_template
 from pydantic import BaseModel, ValidationError
 
 FEED_URL = os.environ.get("FEED_URL", "https://feeds.bbci.co.uk/news/rss.xml")
-MODEL = os.environ.get("OLDE_MODEL", "claude-opus-5-5")
+PROVIDER = os.environ.get("OLDE_PROVIDER", "claude")
+DEFAULT_MODELS = {"claude": "claude-haiku-5-5", "ollama": "llama3.2"}
+if PROVIDER not in DEFAULT_MODELS:
+    raise ValueError(f"OLDE_PROVIDER must be claude or ollama, not {PROVIDER!r}")
+MODEL = os.environ.get("OLDE_MODEL") or DEFAULT_MODELS[PROVIDER]
+OLLAMA_URL = os.environ.get("OLDE_OLLAMA_URL", "http://localhost:11434").rstrip("/")
 STATE_PATH = Path(
     os.environ.get("OLDE_STATE", Path(__file__).parent / ".cache" / "olde.json")
 )
@@ -58,6 +63,10 @@ an empty summary."""
 log = logging.getLogger("olde")
 app = Flask(__name__)
 state_lock = threading.Lock()
+
+
+class OllamaError(Exception):
+    pass
 
 
 class Translation(BaseModel):
@@ -256,39 +265,75 @@ def fetch_feed(state, now):
     merge_entries(state, parsed)
 
 
-def request_translation(client, items):
+def translate_with_claude(client, source):
+    """Send one batch to Claude and return (stop_reason, text)."""
+    request = {
+        "model": MODEL,
+        "max_tokens": 16000,
+        "output_config": {
+            "effort": "medium",
+            "format": {"type": "json_schema", "schema": TRANSLATION_SCHEMA},
+        },
+        "system": SYSTEM_PROMPT,
+        "messages": [{"role": "user", "content": source}],
+    }
+    # Haiku has no server-side fallback; larger models can retry a decline elsewhere.
+    if not MODEL.startswith("claude-haiku"):
+        request.update(betas=["server-side-fallback-2026-07-01"], fallbacks="default")
+    response = client.beta.messages.create(**request)
+    text = next((block.text for block in response.content if block.type == "text"), "")
+    return response.stop_reason, text
+
+
+def translate_with_ollama(source):
+    """Send one batch to a local Ollama server and return (stop_reason, text)."""
+    response = requests.post(
+        f"{OLLAMA_URL}/api/chat",
+        json={
+            "model": MODEL,
+            "stream": False,
+            "format": TRANSLATION_SCHEMA,
+            # Ollama's default context window is too small for a full batch.
+            "options": {"num_ctx": 8192},
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": source},
+            ],
+        },
+        timeout=600,
+    )
+    if response.status_code == 404:
+        raise OllamaError(f"Ollama has no model {MODEL}; run: ollama pull {MODEL}")
+    response.raise_for_status()
+    body = response.json()
+    stop_reason = "max_tokens" if body.get("done_reason") == "length" else "end_turn"
+    return stop_reason, body["message"]["content"]
+
+
+def make_translator():
+    if PROVIDER == "ollama":
+        return translate_with_ollama
+    client = anthropic.Anthropic()
+    return lambda source: translate_with_claude(client, source)
+
+
+def translate_items(translate, items):
+    """Return results by item key, splitting batches to isolate a problem entry."""
     source = [
         {"id": str(index), "title": item["title"], "summary": item["summary"]}
         for index, item in enumerate(items)
     ]
-    return client.beta.messages.create(
-        model=MODEL,
-        max_tokens=16000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        output_config={
-            "effort": "medium",
-            "format": {"type": "json_schema", "schema": TRANSLATION_SCHEMA},
-        },
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": json.dumps(source, ensure_ascii=False)}],
-    )
-
-
-def translate_items(client, items):
-    """Return results by item key, splitting batches to isolate a problem entry."""
-    response = request_translation(client, items)
-    if response.stop_reason in ("refusal", "max_tokens"):
+    stop_reason, text = translate(json.dumps(source, ensure_ascii=False))
+    if stop_reason in ("refusal", "max_tokens"):
         if len(items) == 1:
-            log.warning("Not translating an item: stop_reason=%s", response.stop_reason)
+            log.warning("Not translating an item: stop_reason=%s", stop_reason)
             return {items[0]["key"]: {"untranslatable": True}}
         middle = len(items) // 2
         return {
-            **translate_items(client, items[:middle]),
-            **translate_items(client, items[middle:]),
+            **translate_items(translate, items[:middle]),
+            **translate_items(translate, items[middle:]),
         }
 
-    text = next(block.text for block in response.content if block.type == "text")
     results = {}
     for translation in TranslationBatch.model_validate_json(text).translations:
         if translation.id.isdigit() and int(translation.id) < len(items):
@@ -312,12 +357,18 @@ def translate_pending(state, lock=state_lock):
             save_state(state)
         return
 
-    client = anthropic.Anthropic()
+    translate = make_translator()
     for start in range(0, len(pending), BATCH_SIZE):
         batch = pending[start : start + BATCH_SIZE]
         try:
-            results = translate_items(client, batch)
+            results = translate_items(translate, batch)
             error = None
+        except OllamaError as ollama_error:
+            results, error = {}, str(ollama_error)
+        except requests.HTTPError as http_error:
+            results, error = {}, f"Ollama answered HTTP {http_error.response.status_code}."
+        except requests.RequestException:
+            results, error = {}, f"Could not reach Ollama at {OLLAMA_URL}. Is it running?"
         except anthropic.AuthenticationError:
             results, error = {}, "Claude rejected the API key."
         except anthropic.RateLimitError:
@@ -326,8 +377,8 @@ def translate_pending(state, lock=state_lock):
             results, error = {}, f"Claude answered HTTP {api_error.status_code}."
         except anthropic.APIConnectionError:
             results, error = {}, "Could not reach Claude."
-        except (StopIteration, ValidationError):
-            results, error = {}, "Claude returned an unreadable translation."
+        except (ValidationError, KeyError):
+            results, error = {}, f"{MODEL} returned an unreadable translation."
         except TypeError as type_error:
             # The SDK raises TypeError when no credential can be resolved.
             if "authentication" not in str(type_error).lower():

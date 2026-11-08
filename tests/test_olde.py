@@ -56,9 +56,11 @@ class FakeClaude:
         self.refuse = refuse
         self.error = error
         self.batch_sizes = []
+        self.requests = []
         self.beta = SimpleNamespace(messages=SimpleNamespace(create=self.create))
 
     def create(self, **kwargs):
+        self.requests.append(kwargs)
         if self.error:
             raise self.error
         source = json.loads(kwargs["messages"][0]["content"])
@@ -306,6 +308,115 @@ def test_state_survives_a_restart_so_timing_is_kept(state, monkeypatch):
 
     assert restored["feed"]["next_fetch_at"] == NOW + olde.MIN_POLL_SECONDS
     assert all(item["me_title"] for item in restored["items"])
+
+
+def test_defaults_to_haiku_without_server_side_fallback(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss()))
+    claude = use_claude(monkeypatch)
+
+    olde.refresh(state, now=NOW)
+
+    request = claude.requests[0]
+    assert olde.MODEL == "claude-haiku-5-5"
+    assert request["model"] == "claude-haiku-5-5"
+    assert "fallbacks" not in request and "betas" not in request
+
+
+def test_larger_claude_models_use_server_side_fallback(state, monkeypatch):
+    monkeypatch.setattr(olde, "MODEL", "claude-opus-5-5")
+    use_feed(monkeypatch, http_response(content=rss()))
+    claude = use_claude(monkeypatch)
+
+    olde.refresh(state, now=NOW)
+
+    assert claude.requests[0]["fallbacks"] == "default"
+    assert claude.requests[0]["betas"] == ["server-side-fallback-2026-07-01"]
+
+
+def ollama_reply(payload, done_reason="stop"):
+    source = json.loads(payload["messages"][1]["content"])
+    content = json.dumps(
+        {
+            "translations": [
+                {"id": entry["id"], "title": f"Lo, {entry['title']}", "summary": entry["summary"]}
+                for entry in source
+            ]
+        }
+    )
+    body = {"message": {"role": "assistant", "content": content}, "done": True, "done_reason": done_reason}
+    return http_response(content=json.dumps(body).encode())
+
+
+def use_ollama(monkeypatch, reply=ollama_reply):
+    monkeypatch.setattr(olde, "PROVIDER", "ollama")
+    monkeypatch.setattr(olde, "MODEL", "llama3.2")
+    calls = []
+
+    def post(url, json=None, timeout=None):
+        calls.append((url, json))
+        return reply(json)
+
+    monkeypatch.setattr(olde.requests, "post", post)
+    return calls
+
+
+def test_ollama_translates_with_schema_and_system_prompt(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss(count=3)))
+    calls = use_ollama(monkeypatch)
+    monkeypatch.setattr(olde.anthropic, "Anthropic", lambda: pytest.fail("Claude was called"))
+
+    olde.refresh(state, now=NOW)
+
+    url, payload = calls[0]
+    assert url == "http://localhost:11434/api/chat"
+    assert payload["model"] == "llama3.2"
+    assert payload["stream"] is False
+    assert payload["format"] == olde.TRANSLATION_SCHEMA
+    assert payload["messages"][0] == {"role": "system", "content": olde.SYSTEM_PROMPT}
+    assert [item["me_title"] for item in state["items"]] == [
+        "Lo, Story 0",
+        "Lo, Story 1",
+        "Lo, Story 2",
+    ]
+
+
+def test_ollama_missing_model_says_how_to_pull_it(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss()))
+    use_ollama(monkeypatch, reply=lambda payload: http_response(status=404))
+
+    olde.refresh(state, now=NOW)
+
+    assert state["feed"]["translation_error"] == (
+        "Ollama has no model llama3.2; run: ollama pull llama3.2"
+    )
+    assert all(item["me_title"] is None for item in state["items"])
+
+
+def test_ollama_not_running_is_reported(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss()))
+
+    def refuse(payload):
+        raise requests.ConnectionError("connection refused")
+
+    use_ollama(monkeypatch, reply=refuse)
+
+    olde.refresh(state, now=NOW)
+
+    assert "Is it running?" in state["feed"]["translation_error"]
+
+
+def test_ollama_output_cut_off_splits_the_batch(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss(count=2)))
+    use_ollama(
+        monkeypatch,
+        reply=lambda payload: ollama_reply(
+            payload, "length" if len(json.loads(payload["messages"][1]["content"])) > 1 else "stop"
+        ),
+    )
+
+    olde.refresh(state, now=NOW)
+
+    assert all(item["me_title"].startswith("Lo, ") for item in state["items"])
 
 
 def test_page_view_never_fetches_and_shows_translation_and_attribution(state, monkeypatch):
