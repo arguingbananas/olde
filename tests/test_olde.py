@@ -349,7 +349,7 @@ def ollama_reply(payload, done_reason="stop"):
 
 def use_ollama(monkeypatch, reply=ollama_reply):
     monkeypatch.setattr(olde, "PROVIDER", "ollama")
-    monkeypatch.setattr(olde, "MODEL", "llama3.2")
+    monkeypatch.setattr(olde, "MODEL", olde.DEFAULT_MODELS["ollama"])
     calls = []
 
     def post(url, json=None, timeout=None):
@@ -369,8 +369,9 @@ def test_ollama_translates_with_schema_and_system_prompt(state, monkeypatch):
 
     url, payload = calls[0]
     assert url == "http://localhost:11434/api/chat"
-    assert payload["model"] == "llama3.2"
+    assert payload["model"] == "qwen3.5:4b"
     assert payload["stream"] is False
+    assert payload["think"] is False
     assert payload["format"] == olde.TRANSLATION_SCHEMA
     assert payload["messages"][0] == {"role": "system", "content": olde.SYSTEM_PROMPT}
     assert [item["me_title"] for item in state["items"]] == [
@@ -387,7 +388,7 @@ def test_ollama_missing_model_says_how_to_pull_it(state, monkeypatch):
     olde.refresh(state, now=NOW)
 
     assert state["feed"]["translation_error"] == (
-        "Ollama has no model llama3.2; run: ollama pull llama3.2"
+        "Ollama has no model qwen3.5:4b; run: ollama pull qwen3.5:4b"
     )
     assert all(item["me_title"] is None for item in state["items"])
 

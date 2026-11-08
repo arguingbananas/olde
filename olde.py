@@ -24,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 FEED_URL = os.environ.get("FEED_URL", "https://feeds.bbci.co.uk/news/rss.xml")
 PROVIDER = os.environ.get("OLDE_PROVIDER", "claude")
-DEFAULT_MODELS = {"claude": "claude-haiku-5-5", "ollama": "llama3.2"}
+DEFAULT_MODELS = {"claude": "claude-haiku-5-5", "ollama": "qwen3.5:4b"}
 if PROVIDER not in DEFAULT_MODELS:
     raise ValueError(f"OLDE_PROVIDER must be claude or ollama, not {PROVIDER!r}")
 MODEL = os.environ.get("OLDE_MODEL") or DEFAULT_MODELS[PROVIDER]
@@ -292,6 +292,8 @@ def translate_with_ollama(source):
         json={
             "model": MODEL,
             "stream": False,
+            # Small thinking models can spend many minutes thinking about one batch.
+            "think": False,
             "format": TRANSLATION_SCHEMA,
             # Ollama's default context window is too small for a full batch.
             "options": {"num_ctx": 8192},

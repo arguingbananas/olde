@@ -29,12 +29,16 @@ Ollama runs a model on your own machine, so translations cost nothing and
 need no API key. Install it from https://ollama.com, then:
 
 ```
-ollama pull llama3.2
+ollama pull qwen3.5:4b
 OLDE_PROVIDER=ollama .venv/bin/python olde.py
 ```
 
-`llama3.2` is a 3B model that fits on a 4 GB GPU. Larger models translate
-better if your hardware can run them; choose one with `OLDE_MODEL`.
+`qwen3.5:4b` stayed the most faithful to the news among the small models we
+tried (`llama3.2`, `gemma3:4b` and `phi4-mini` all added or changed facts), but
+its King James English is stilted. On a 4 GB GPU it runs partly on the CPU and
+takes about a minute per batch. Thinking is turned off, because it otherwise
+spends many minutes on one batch. Larger models translate better if your
+hardware can run them; choose one with `OLDE_MODEL`.
 
 Translations are saved by story, so switching provider keeps the ones you
 already have. To compare providers, give each its own state file, for example
@@ -46,7 +50,7 @@ already have. To compare providers, give each its own state file, for example
 |---|---|---|
 | `FEED_URL` | BBC News front page | The RSS or Atom feed to read. Feeds that declare a non-English language are rejected. |
 | `OLDE_PROVIDER` | `claude` | `claude` or `ollama`. |
-| `OLDE_MODEL` | `claude-haiku-5-5`, or `llama3.2` with Ollama | The model used for translation. |
+| `OLDE_MODEL` | `claude-haiku-5-5`, or `qwen3.5:4b` with Ollama | The model used for translation. |
 | `OLDE_OLLAMA_URL` | `http://localhost:11434` | Where the Ollama server is running. |
 | `OLDE_STATE` | `.cache/olde.json` | Where feed state and translations are saved. |
 
