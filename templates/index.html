@@ -3,18 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBC News RSS Feed</title>
+    <title>Olde News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>{{ feed.title }}</h1>
-    <p>{{ feed.description }}</p>
-    <ul>
-    {% for entry in feed.entries %}
-        <li>
-            <h2><a href="{{ entry.link }}">{{ entry.title }}</a></h2>
-            <p>{{ entry.summary }}</p>
-        </li>
+    <header>
+        <h1>Olde News</h1>
+        <p class="tagline">The tidings of this day, in the tonge of Chaucer</p>
+    </header>
+
+    {% if feed.feed_error %}<p class="notice">{{ feed.feed_error }}</p>{% endif %}
+    {% if feed.translation_error %}<p class="notice">{{ feed.translation_error }}</p>{% endif %}
+    {% if waiting %}<p class="notice">{{ waiting }} of {{ items|length }} stories are awaiting translation. Refresh in a little while to see them.</p>{% endif %}
+    {% if not items and not feed.feed_error %}<p class="notice">The first stories are on their way. Refresh in a moment.</p>{% endif %}
+
+    <main>
+    {% for item in items %}
+        <article>
+            {% set headline = item.me_title or item.title %}
+            <h2 {% if not item.me_title %}class="untranslated"{% endif %}>
+                {% if item.link %}<a href="{{ item.link }}">{{ headline }}</a>{% else %}{{ headline }}{% endif %}
+            </h2>
+            {% if item.me_title %}
+                {% if item.me_summary %}<p>{{ item.me_summary }}</p>{% endif %}
+                <details>
+                    <summary>Modern English</summary>
+                    <p><strong>{{ item.title }}</strong></p>
+                    {% if item.summary %}<p>{{ item.summary }}</p>{% endif %}
+                </details>
+            {% else %}
+                {% if item.summary %}<p class="untranslated">{{ item.summary }}</p>{% endif %}
+                {% if item.untranslatable %}<p class="status">Shown in modern English because this story could not be translated.</p>{% endif %}
+            {% endif %}
+            {% if item.published %}<p class="status">{{ item.published }}</p>{% endif %}
+        </article>
     {% endfor %}
-    </ul>
+    </main>
+
+    <footer>
+        {% if feed.title %}
+        <p>Headlines and summaries come from
+            {% if feed.link %}<a href="{{ feed.link }}">{{ feed.title }}</a>{% else %}{{ feed.title }}{% endif %}.
+            Each headline links to the original story.</p>
+        {% endif %}
+        <p>This is an unofficial machine translation into imitation Middle English. It may contain errors, so check the original before relying on it. It is not affiliated with or endorsed by the source.</p>
+    </footer>
 </body>
 </html>

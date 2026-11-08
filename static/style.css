@@ -1,0 +1,111 @@
+:root {
+    color-scheme: light dark;
+    --parchment: #f6efdf;
+    --ink: #2b2118;
+    --muted: #6a5a48;
+    --rubric: #9c2a1c;
+    --rule: #d8c9a8;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --parchment: #1f1a14;
+        --ink: #eadfca;
+        --muted: #b3a48d;
+        --rubric: #e58b6d;
+        --rule: #4a3f30;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0 auto;
+    max-width: 44rem;
+    padding: 2rem 1rem 3rem;
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: 1.125rem;
+    line-height: 1.6;
+}
+
+header {
+    border-bottom: 3px double var(--rubric);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+h1 {
+    color: var(--rubric);
+    font-size: 2.75rem;
+    font-weight: normal;
+    margin: 0;
+}
+
+.tagline {
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+article {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.25rem 0;
+}
+
+h2 {
+    font-size: 1.35rem;
+    font-weight: normal;
+    line-height: 1.35;
+    margin: 0 0 0.5rem;
+    overflow-wrap: anywhere;
+}
+
+h2::first-letter {
+    color: var(--rubric);
+    font-size: 2.1em;
+    line-height: 1;
+}
+
+a {
+    color: inherit;
+    text-decoration-color: var(--rubric);
+}
+
+p {
+    margin: 0.5rem 0;
+}
+
+details {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+summary {
+    cursor: pointer;
+    color: var(--rubric);
+}
+
+.untranslated {
+    font-style: italic;
+}
+
+.status {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.notice {
+    border-left: 3px solid var(--rubric);
+    padding-left: 0.75rem;
+}
+
+footer {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 2rem;
+}
