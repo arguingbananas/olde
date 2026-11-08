@@ -138,6 +138,21 @@ def test_merges_entries_with_identical_text_and_keeps_the_first(state, monkeypat
     assert claude.batch_sizes == [2]
 
 
+def test_strips_wordpress_footer_from_summaries():
+    summary = (
+        "<p>The post office reopens today. It has served the town for years [&#8230;]</p>\n"
+        '<p>The post <a href="https://example.com/x">Post Office Reopens</a> appeared first on '
+        '<a href="https://example.com">The White House</a>.</p>'
+    )
+
+    assert olde.clean_summary(summary) == (
+        "The post office reopens today. It has served the town for years […]"
+    )
+    assert olde.clean_summary("The post office reopens today.") == (
+        "The post office reopens today."
+    )
+
+
 def test_does_not_fetch_again_before_the_poll_interval(state, monkeypatch):
     server = use_feed(monkeypatch, http_response(content=rss(ttl=30)))
     use_claude(monkeypatch)

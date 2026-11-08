@@ -174,6 +174,16 @@ def clean_text(value):
     return html.unescape(re.sub(r"<[^>]+>", " ", value or "")).strip()
 
 
+# WordPress ends each excerpt with "The post <title> appeared first on <site>."
+WORDPRESS_FOOTER = re.compile(
+    r"\s*The post\s(?:(?!The post\s).)*\sappeared first on\s[^.]*\.?$", re.DOTALL
+)
+
+
+def clean_summary(value):
+    return WORDPRESS_FOOTER.sub("", clean_text(value))
+
+
 def safe_link(value):
     return value if re.match(r"https?://", value or "", re.IGNORECASE) else ""
 
@@ -184,7 +194,7 @@ def merge_entries(state, parsed):
     items = {}
     for entry in parsed.entries:
         title = clean_text(entry.get("title"))
-        summary = clean_text(entry.get("summary"))
+        summary = clean_summary(entry.get("summary"))
         if not title and not summary:
             continue
         # Keyed on the text alone so entries that repeat a story merge into the first.
