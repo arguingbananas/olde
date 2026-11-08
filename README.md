@@ -1,6 +1,6 @@
 # Olde
 
-What would modern news look like in the English of the King James Bible?
+What would modern news look like in the English of the King James Bible?¹
 
 Olde reads an English-language RSS feed and shows every headline and summary in
 King James English, translated by Claude or by a local model through Ollama:
@@ -82,3 +82,7 @@ to `127.0.0.1` so it stays private by default.
 .venv/bin/pip install pytest
 .venv/bin/python -m pytest
 ```
+
+---
+
+¹ The entire project — concept, specification, and code — was an original human idea written by an artificial intelligence.
