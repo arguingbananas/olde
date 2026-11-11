@@ -301,6 +301,20 @@ def test_api_failure_keeps_originals_and_retries_next_poll(state, monkeypatch):
     assert all(item["me_title"] for item in state["items"])
 
 
+def test_unknown_or_retired_model_says_to_set_olde_model(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss()))
+    request = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx2.Response(404, request=request)
+    error = anthropic.NotFoundError("model not found", response=response, body=None)
+    use_claude(monkeypatch, FakeClaude(error=error))
+
+    olde.refresh(state, now=NOW)
+
+    assert olde.MODEL in state["feed"]["translation_error"]
+    assert "OLDE_MODEL" in state["feed"]["translation_error"]
+    assert all(item["me_title"] is None for item in state["items"])
+
+
 def test_missing_credentials_show_a_helpful_message(state, monkeypatch):
     use_feed(monkeypatch, http_response(content=rss()))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -358,7 +372,11 @@ def ollama_reply(payload, done_reason="stop"):
             ]
         }
     )
-    body = {"message": {"role": "assistant", "content": content}, "done": True, "done_reason": done_reason}
+    body = {
+        "message": {"role": "assistant", "content": content},
+        "done": True,
+        "done_reason": done_reason,
+    }
     return http_response(content=json.dumps(body).encode())
 
 
@@ -463,9 +481,14 @@ def test_unsafe_links_are_dropped_and_markup_is_escaped(state, monkeypatch):
         b"<link>javascript:alert(1)</link><guid>1</guid></item></channel></rss>"
     )
     use_feed(monkeypatch, http_response(content=feed))
-    use_claude(monkeypatch, FakeClaude(error=anthropic.APIConnectionError(
-        request=httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
-    )))
+    use_claude(
+        monkeypatch,
+        FakeClaude(
+            error=anthropic.APIConnectionError(
+                request=httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+            )
+        ),
+    )
     olde.refresh(state, now=NOW)
     monkeypatch.setattr(olde, "shared_state", state)
 
@@ -474,3 +497,22 @@ def test_unsafe_links_are_dropped_and_markup_is_escaped(state, monkeypatch):
     assert state["items"][0]["link"] == ""
     assert "javascript:" not in body
     assert "<script" not in body
+
+
+def test_quality_check_flags_lost_facts_and_unchanged_text():
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import check_translations
+
+    story = {"title": "Rovers win 3-1", "summary": "", "keep": ["Rovers"]}
+    good = {"me_title": "Rovers hath won 3-1", "me_summary": ""}
+    assert check_translations.problems_with(story, good) == []
+
+    bad = {"me_title": "Rovers win 3-1", "me_summary": "And there was joy."}
+    assert check_translations.problems_with(story, bad) == [
+        "headline unchanged",
+        "empty summary was filled in",
+    ]
+    assert check_translations.problems_with(story, {"me_title": "They won", "me_summary": ""}) == [
+        "lost 'Rovers'",
+        "lost '3-1'",
+    ]

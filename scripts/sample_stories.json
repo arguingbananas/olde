@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Regulators propose rules for artificial intelligence in hospitals",
+    "summary": "The draft, published on 3 March, would require 12 safety checks before any system is used on patients.",
+    "keep": ["artificial intelligence", "3 March", "12"]
+  },
+  {
+    "title": "Prime Minister Elena Varga survives confidence vote by 214 to 198",
+    "summary": "Opposition leader Tomas Reed said the result showed the government had lost the trust of the country.",
+    "keep": ["Elena Varga", "214", "198", "Tomas Reed"]
+  },
+  {
+    "title": "Flooding forces 4,500 people from their homes in Northbridge",
+    "summary": "Two people have died and rescue teams are still searching the worst-hit streets, police said.",
+    "keep": ["4,500", "Northbridge"]
+  },
+  {
+    "title": "Escaped tortoise found two miles from home after three weeks",
+    "summary": "Owners of Gerald, aged 62, said he was hungry but otherwise in good spirits.",
+    "keep": ["Gerald", "62"]
+  },
+  {
+    "title": "UK GDP grew 0.4% in the third quarter, official figures show",
+    "summary": "Economists had expected growth of 0.2%, helped by spending on the internet and online services.",
+    "keep": ["GDP", "0.4%", "0.2%", "internet"]
+  },
+  {
+    "title": "Harlow Rovers beat Kingsford City 3-1 to reach the cup final",
+    "summary": "Striker Amara Okoye scored twice in the second half.",
+    "keep": ["Harlow Rovers", "Kingsford City", "3-1", "Amara Okoye"]
+  },
+  {
+    "title": "Phone maker recalls 80,000 chargers over fire risk",
+    "summary": "Customers are asked to stop using chargers sold between January and June 2026.",
+    "keep": ["80,000", "January", "June 2026"]
+  },
+  {
+    "title": "Watch: Fireworks light up the harbour at midnight",
+    "summary": "",
+    "keep": []
+  }
+]

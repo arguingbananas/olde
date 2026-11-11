@@ -4,12 +4,19 @@ What would modern news look like in the English of the King James Bible?¹
 
 Olde reads an English-language RSS feed and shows every headline and summary in
 King James English, translated by Claude or by a local model through Ollama:
-period grammar such as "hath", "-eth"
-and "unto", with modern spelling so it stays easy to read. Each story links to
-the original, and the modern English text is one click away. This is imitation
-Early Modern English for fun, not historically exact scholarship.
+period grammar such as "hath", "-eth" and "unto", with modern spelling so it
+stays easy to read. Each story links to the original, and the modern English
+text is one click away. This is imitation Early Modern English for fun, not
+historically exact scholarship.
+
+It's a personal project for one reader, running on their own computer and
+viewed in a browser. It isn't built to be hosted for the public.
 
 ## Run it
+
+Olde needs Python 3.12 or newer. It's developed and tested on Linux (Linux Mint
+22.3) and should run anywhere Python does. Only the Ollama option cares about
+hardware.
 
 ```
 python3 -m venv .venv
@@ -20,6 +27,11 @@ export ANTHROPIC_API_KEY=...
 
 Then open http://127.0.0.1:5000. Stories appear in modern English first and
 switch to King James English as their translations finish.
+
+With Claude Haiku, translation costs about $0.00025 per story (measured on the
+BBC and White House feeds, plus about 30% for the high effort setting). A busy
+feed with about 100 new stories a day comes to roughly $0.75 a month. Set a
+spending limit in the Anthropic Console to be safe.
 
 Run a single process only, because each process would poll the feed on its own.
 
@@ -54,6 +66,9 @@ already have. To compare providers, give each its own state file, for example
 | `OLDE_OLLAMA_URL` | `http://localhost:11434` | Where the Ollama server is running. |
 | `OLDE_STATE` | `.cache/olde.json` | Where feed state and translations are saved. |
 
+`.env.example` lists them all. Copy it to `.env`, fill it in, and load it with
+`set -a; . ./.env; set +a` before starting Olde. `.env` is git-ignored.
+
 ## How it treats the feed
 
 - One background worker fetches the feed. Page views only read saved state.
@@ -68,6 +83,16 @@ already have. To compare providers, give each its own state file, for example
 
 Only new or changed stories are sent to the model, in batches of 25.
 
+## Privacy
+
+Olde collects nothing about you: no accounts, cookies or analytics, and the page
+is only reachable from your own computer. The only data it sends anywhere is
+the feed's headlines and summaries, which go to Anthropic for translation (or
+stay on your machine with Ollama). Requests to the feed carry Olde's
+`User-Agent` and nothing else about you. Feed text and translations are kept in
+the state file until stories drop out of the feed; delete `.cache/` to clear
+them.
+
 ## Using the BBC feed
 
 The BBC feed's terms are at
@@ -77,12 +102,38 @@ sends feed text to an AI model (Anthropic's service, unless you use Ollama) and
 displays altered versions of it. Olde binds to `127.0.0.1` so it stays private
 by default.
 
-## Tests
+## Development
+
+Install the development tools, then run the tests, the linter, the formatter
+and the dependency vulnerability scan:
 
 ```
-.venv/bin/pip install pytest
+.venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m pytest
+.venv/bin/ruff check .
+.venv/bin/ruff format .
+.venv/bin/pip-audit -r requirements-dev.txt
 ```
+
+The tests use fake feed and model servers, so they never contact the BBC or a
+paid API. The full suite takes a few seconds; run it after every change.
+
+After changing the prompt or the model, run the translation check. It
+translates eight invented stories with the real model (well under a cent with
+Haiku), prints them for reading, and flags lost names or numbers, unchanged
+headlines and filled-in empty summaries:
+
+```
+.venv/bin/python scripts/check_translations.py
+```
+
+Work happens on `main`. Commit subjects are short, in the imperative mood
+("Strip the WordPress footer from feed summaries"), and commits use the
+GitHub noreply address.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ---
 

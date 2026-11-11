@@ -1,0 +1,7 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# The defaults plus line length, import order, likely bugs and outdated syntax.
+extend-select = ["E501", "I", "B", "UP"]

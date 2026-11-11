@@ -4,3 +4,5 @@
 __pycache__/
 *.pyc
 .env
+.ruff_cache/
+CLAUDE.local.md

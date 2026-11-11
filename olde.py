@@ -29,9 +29,7 @@ if PROVIDER not in DEFAULT_MODELS:
     raise ValueError(f"OLDE_PROVIDER must be claude or ollama, not {PROVIDER!r}")
 MODEL = os.environ.get("OLDE_MODEL") or DEFAULT_MODELS[PROVIDER]
 OLLAMA_URL = os.environ.get("OLDE_OLLAMA_URL", "http://localhost:11434").rstrip("/")
-STATE_PATH = Path(
-    os.environ.get("OLDE_STATE", Path(__file__).parent / ".cache" / "olde.json")
-)
+STATE_PATH = Path(os.environ.get("OLDE_STATE", Path(__file__).parent / ".cache" / "olde.json"))
 
 USER_AGENT = "olde/0.1 (+https://github.com/arguingbananas/olde)"
 MIN_POLL_SECONDS = 15 * 60
@@ -46,13 +44,20 @@ such as "hath", "doth", "-eth" verbs, "thou" and "thee" when someone is \
 addressed, "unto", "wherefore" and "thereby", but keep modern spelling so any \
 modern reader can follow it with ease. Every headline and every summary must \
 read as King James English: rework the grammar and wording of each sentence, \
-not just a single verb, and never return a headline or summary unchanged.
+not just a single verb, and never return a headline or summary unchanged. Give \
+every sentence strong King James phrasing, such as "it came to pass", "behold", \
+"yea", "ere", "lo" or inverted word order where it reads naturally, rather than \
+plain modern English with one old word added, and make the old verbs agree with \
+their subjects ("he doth", "they do", "it hath", "they have").
 
 This is a translation of real news, so stay faithful to it. Do not add, remove, \
-soften or change any fact. Keep names, places, numbers and dates exactly. Keep \
-modern terms such as "artificial intelligence", "the internet" or "GDP" as they \
-are written, instead of inventing a period phrase for them; the old voice should \
-come from the grammar and phrasing around them.
+soften or change any fact. Keep names and places exactly. Copy every number, \
+percentage, score and date in the same digits and form as the source, such as \
+"1,250", "2.5%", "2-0", "14 July" or "2025"; never spell a number out in words \
+or use period counting such as "score". Keep modern terms and abbreviations such \
+as "artificial intelligence", "the internet", "NHS" or "GDP" exactly as they are \
+written, without expanding them or inventing a period phrase for them; the old \
+voice should come from the grammar and phrasing around them.
 
 Match the gravity of the source. Stories about death, violence, abuse, illness or \
 grief must be translated soberly, with no jokes or mock-heroic flourishes. Light \
@@ -284,7 +289,8 @@ def translate_with_claude(client, source):
         "model": MODEL,
         "max_tokens": 16000,
         "output_config": {
-            "effort": "medium",
+            # High effort gives noticeably stronger King James phrasing for a few cents a month.
+            "effort": "high",
             "format": {"type": "json_schema", "schema": TRANSLATION_SCHEMA},
         },
         "system": SYSTEM_PROMPT,
@@ -362,9 +368,7 @@ def translate_items(translate, items):
 def translate_pending(state, lock=state_lock):
     """Translate waiting items in batches, saving after each so progress survives."""
     pending = [
-        item
-        for item in state["items"]
-        if item["me_title"] is None and not item["untranslatable"]
+        item for item in state["items"] if item["me_title"] is None and not item["untranslatable"]
     ]
     if not pending:
         with lock:
@@ -388,6 +392,9 @@ def translate_pending(state, lock=state_lock):
             results, error = {}, "Claude rejected the API key."
         except anthropic.RateLimitError:
             results, error = {}, "Claude is rate limiting us; will retry later."
+        except anthropic.NotFoundError:
+            retired = f"Claude has no model {MODEL}; it may have been retired."
+            results, error = {}, f"{retired} Set OLDE_MODEL to a current model."
         except anthropic.APIStatusError as api_error:
             results, error = {}, f"Claude answered HTTP {api_error.status_code}."
         except anthropic.APIConnectionError:
@@ -445,9 +452,7 @@ def index():
     with state_lock:
         snapshot = copy.deepcopy(shared_state)
     waiting = sum(
-        1
-        for item in snapshot["items"]
-        if item["me_title"] is None and not item["untranslatable"]
+        1 for item in snapshot["items"] if item["me_title"] is None and not item["untranslatable"]
     )
     return render_template(
         "index.html", feed=snapshot["feed"], items=snapshot["items"], waiting=waiting
