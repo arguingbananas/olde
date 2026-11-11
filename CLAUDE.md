@@ -71,6 +71,8 @@ Required:
 - `.github/workflows/ci.yml`: runs lint, format check, tests and `pip-audit`
   on every push, with no API key
 - `.github/dependabot.yml`: weekly grouped updates for pip and the CI actions
+- `.github/workflows/dependabot-auto-merge.yml`: squash-merges Dependabot
+  patch updates once CI passes; minor and major updates wait for review
 
 Optional, not present yet: CHANGELOG, CONTRIBUTING, ARCHITECTURE notes,
 ROADMAP, packaging or Docker, benchmarks.

@@ -126,7 +126,8 @@ and the dependency vulnerability scan:
 The tests use fake feed and model servers, so they never contact the live feed or a
 paid API. The full suite takes a few seconds; run it after every change.
 GitHub Actions runs the same checks on every push, and Dependabot proposes
-dependency updates weekly.
+dependency updates weekly. Bug-fix (patch) updates merge themselves once those
+checks pass; minor and major updates wait for a person to review them.
 
 After changing the prompt or the model, run the translation check. It
 translates eight invented stories with the real model (well under a cent with
