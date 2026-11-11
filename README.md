@@ -66,15 +66,16 @@ already have. To compare providers, give each its own state file, for example
 - It doesn't fetch article pages, hotlink images, or republish a feed.
 - It credits the source and links each story to the original article.
 
-Only new or changed stories are sent to Claude, in batches of 25.
+Only new or changed stories are sent to the model, in batches of 25.
 
 ## Using the BBC feed
 
 The BBC feed's terms are at
 https://www.bbc.co.uk/usingthebbc/terms-of-use/#15metadataandrssfeeds. Read them
 before you host this anywhere public or use it commercially, because this app
-sends feed text to an AI service and displays altered versions of it. Olde binds
-to `127.0.0.1` so it stays private by default.
+sends feed text to an AI model (Anthropic's service, unless you use Ollama) and
+displays altered versions of it. Olde binds to `127.0.0.1` so it stays private
+by default.
 
 ## Tests
 
