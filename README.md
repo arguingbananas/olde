@@ -28,8 +28,8 @@ export ANTHROPIC_API_KEY=...
 Then open http://127.0.0.1:5000. Stories appear in modern English first and
 switch to King James English as their translations finish.
 
-With Claude Haiku, translation costs about $0.00025 per story (measured on the
-BBC and White House feeds, plus about 30% for the high effort setting). A busy
+With Claude Haiku, translation costs about $0.00025 per story (measured on real
+news feeds, plus about 30% for the high effort setting). A busy
 feed with about 100 new stories a day comes to roughly $0.75 a month. Set a
 spending limit in the Anthropic Console to be safe.
 
@@ -60,7 +60,7 @@ already have. To compare providers, give each its own state file, for example
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `FEED_URL` | BBC News front page | The RSS or Atom feed to read. Feeds that declare a non-English language are rejected. |
+| `FEED_URL` | White House news releases | The RSS or Atom feed to read. Feeds that declare a non-English language are rejected. |
 | `OLDE_PROVIDER` | `claude` | `claude` or `ollama`. |
 | `OLDE_MODEL` | `claude-haiku-5-5`, or `qwen3.5:4b` with Ollama | The model used for translation. |
 | `OLDE_OLLAMA_URL` | `http://localhost:11434` | Where the Ollama server is running. |
@@ -79,6 +79,7 @@ already have. To compare providers, give each its own state file, for example
 - It honors `Retry-After`, backs off after failures for up to 6 hours, follows
   permanent redirects, and stops polling on `410 Gone`.
 - It doesn't fetch article pages, hotlink images, or republish a feed.
+- It stops reading a feed larger than 5 MB and tries again later.
 - It credits the source and links each story to the original article.
 
 Only new or changed stories are sent to the model, in batches of 25.
@@ -93,14 +94,21 @@ stay on your machine with Ollama). Requests to the feed carry Olde's
 the state file until stories drop out of the feed; delete `.cache/` to clear
 them.
 
-## Using the BBC feed
+## About the default feed
 
-The BBC feed's terms are at
-https://www.bbc.co.uk/usingthebbc/terms-of-use/#15metadataandrssfeeds. Read them
-before you host this anywhere public or use it commercially, because this app
-sends feed text to an AI model (Anthropic's service, unless you use Ollama) and
-displays altered versions of it. Olde binds to `127.0.0.1` so it stays private
-by default.
+Olde reads the White House news feed by default because its text is free to
+translate. Works of the US federal government aren't protected by copyright
+(17 U.S.C. § 105), so translating and altering them needs no permission. Two
+limits remain: material a release quotes from someone else, such as an article
+or a photo, may still be copyrighted, and the White House name and seal can't
+be used to suggest endorsement. The page says it is unofficial and unaffiliated.
+
+The feed is the administration's own publicity, not neutral news, and Olde
+translates it as written.
+
+If you point `FEED_URL` at another source, check its terms first: many news
+feeds forbid altering their content or sending it to an AI service. Olde binds
+to `127.0.0.1` so it stays private by default.
 
 ## Development
 
@@ -115,8 +123,10 @@ and the dependency vulnerability scan:
 .venv/bin/pip-audit -r requirements-dev.txt
 ```
 
-The tests use fake feed and model servers, so they never contact the BBC or a
+The tests use fake feed and model servers, so they never contact the live feed or a
 paid API. The full suite takes a few seconds; run it after every change.
+GitHub Actions runs the same checks on every push, and Dependabot proposes
+dependency updates weekly.
 
 After changing the prompt or the model, run the translation check. It
 translates eight invented stories with the real model (well under a cent with

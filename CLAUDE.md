@@ -1,7 +1,8 @@
 # Olde
 
-Olde is a small Flask app that reads one English-language RSS feed (BBC News by
-default) and shows every headline and summary in imitation King James English.
+Olde is a small Flask app that reads one English-language RSS feed (White House
+news releases by default) and shows every headline and summary in imitation
+King James English.
 Translation is done by Claude Haiku (`claude-haiku-5-5`, the default) or by a
 local Ollama model (`qwen3.5:4b`). It's a personal project for one reader on
 their own computer, bound to 127.0.0.1, and not meant for public hosting.
@@ -67,10 +68,12 @@ Required:
 - `pyproject.toml`: ruff settings
 - `README.md`, `LICENSE` (MIT), `SECURITY.md`, `.env.example`, `.gitignore`,
   `CLAUDE.md`
+- `.github/workflows/ci.yml`: runs lint, format check, tests and `pip-audit`
+  on every push, with no API key
+- `.github/dependabot.yml`: weekly grouped updates for pip and the CI actions
 
 Optional, not present yet: CHANGELOG, CONTRIBUTING, ARCHITECTURE notes,
-ROADMAP, a CI workflow, automated dependency updates, packaging or Docker,
-benchmarks.
+ROADMAP, packaging or Docker, benchmarks.
 
 ## Definition of done
 

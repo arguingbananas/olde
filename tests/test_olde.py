@@ -34,6 +34,8 @@ def http_response(status=200, content=b"", headers=None):
     response = requests.Response()
     response.status_code = status
     response._content = content
+    # Lets iter_content serve the body above, as it does for a streamed download.
+    response._content_consumed = True
     response.headers.update(headers or {})
     response.url = olde.FEED_URL
     return response
@@ -44,7 +46,7 @@ class FakeFeedServer:
         self.responses = list(responses)
         self.requests = []
 
-    def get(self, url, headers=None, timeout=None):
+    def get(self, url, headers=None, timeout=None, stream=False):
         self.requests.append((url, headers))
         return self.responses.pop(0)
 
@@ -258,6 +260,19 @@ def test_network_failure_is_recorded_and_retried_later(state, monkeypatch):
 
     assert "no route" in state["feed"]["feed_error"]
     assert state["feed"]["next_fetch_at"] == NOW + olde.MIN_POLL_SECONDS
+
+
+def test_oversized_feed_is_not_read_and_retried_later(state, monkeypatch):
+    monkeypatch.setattr(olde, "MAX_FEED_BYTES", 100)
+    use_feed(monkeypatch, http_response(content=rss(count=5)))
+    claude = use_claude(monkeypatch)
+
+    olde.refresh(state, now=NOW)
+
+    assert "larger than" in state["feed"]["feed_error"]
+    assert state["items"] == []
+    assert state["feed"]["next_fetch_at"] == NOW + olde.MIN_POLL_SECONDS
+    assert claude.requests == []
 
 
 def test_rejects_non_english_feeds_without_calling_claude(state, monkeypatch):

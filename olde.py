@@ -22,7 +22,7 @@ import requests
 from flask import Flask, render_template
 from pydantic import BaseModel, ValidationError
 
-FEED_URL = os.environ.get("FEED_URL", "https://feeds.bbci.co.uk/news/rss.xml")
+FEED_URL = os.environ.get("FEED_URL", "https://www.whitehouse.gov/news/feed/")
 PROVIDER = os.environ.get("OLDE_PROVIDER", "claude")
 DEFAULT_MODELS = {"claude": "claude-haiku-5-5", "ollama": "qwen3.5:4b"}
 if PROVIDER not in DEFAULT_MODELS:
@@ -36,6 +36,8 @@ MIN_POLL_SECONDS = 15 * 60
 MAX_BACKOFF_SECONDS = 6 * 60 * 60
 WORKER_TICK_SECONDS = 30
 BATCH_SIZE = 25
+# Real news feeds are well under 1 MB; anything far larger is broken or hostile.
+MAX_FEED_BYTES = 5 * 1024 * 1024
 
 SYSTEM_PROMPT = """\
 You translate modern English news headlines and summaries into the English of \
@@ -222,6 +224,16 @@ def merge_entries(state, parsed):
     state["items"] = list(items.values())
 
 
+def read_limited(response):
+    """Return the response body, or None if it is larger than MAX_FEED_BYTES."""
+    body = bytearray()
+    for chunk in response.iter_content(64 * 1024):
+        body += chunk
+        if len(body) > MAX_FEED_BYTES:
+            return None
+    return bytes(body)
+
+
 def fetch_feed(state, now):
     """Make one conditional GET and set the earliest time we may ask again."""
     feed = state["feed"]
@@ -232,7 +244,9 @@ def fetch_feed(state, now):
         headers["If-Modified-Since"] = feed["last_modified"]
 
     try:
-        response = requests.get(feed["url"], headers=headers, timeout=30)
+        response = requests.get(feed["url"], headers=headers, timeout=30, stream=True)
+        content = read_limited(response) if response.status_code == 200 else b""
+        response.close()
     except requests.RequestException as error:
         record_feed_failure(feed, now, f"Could not reach the feed: {error}")
         return
@@ -262,7 +276,12 @@ def fetch_feed(state, now):
         feed["next_fetch_at"] = now + delay
         return
 
-    parsed = feedparser.parse(response.content)
+    if content is None:
+        limit = MAX_FEED_BYTES // (1024 * 1024)
+        record_feed_failure(feed, now, f"The feed is larger than {limit} MB, so it was not read.")
+        return
+
+    parsed = feedparser.parse(content)
     if not parsed.entries and not parsed.feed.get("title"):
         record_feed_failure(feed, now, "The response was not a readable feed.")
         return
