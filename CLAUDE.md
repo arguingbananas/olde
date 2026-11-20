@@ -68,6 +68,8 @@ Required:
 - `pyproject.toml`: ruff settings
 - `README.md`, `LICENSE` (MIT), `SECURITY.md`, `.env.example`, `.gitignore`,
   `CLAUDE.md`
+- `THIRD_PARTY_LICENSES.md`: every dependency and tool with its license;
+  update it when dependencies are added or removed
 - `.github/workflows/ci.yml`: runs lint, format check, tests and `pip-audit`
   on every push, with no API key
 - `.github/dependabot.yml`: weekly grouped updates for pip and the CI actions

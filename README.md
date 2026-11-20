@@ -28,9 +28,10 @@ export ANTHROPIC_API_KEY=...
 Then open http://127.0.0.1:5000. Stories appear in modern English first and
 switch to King James English as their translations finish.
 
-With Claude Haiku, translation costs about $0.00025 per story (measured on real
-news feeds, plus about 30% for the high effort setting). A busy
-feed with about 100 new stories a day comes to roughly $0.75 a month. Set a
+With Claude Haiku, translation costs about $0.00025 per story, measured on real
+news feeds; the high effort setting Olde uses adds about 30%, for roughly
+$0.00033. A busy feed with about 100 new stories a day comes to roughly $1 a
+month. Set a
 spending limit in the Anthropic Console to be safe.
 
 Run a single process only, because each process would poll the feed on its own.
@@ -91,8 +92,8 @@ is only reachable from your own computer. The only data it sends anywhere is
 the feed's headlines and summaries, which go to Anthropic for translation (or
 stay on your machine with Ollama). Requests to the feed carry Olde's
 `User-Agent` and nothing else about you. Feed text and translations are kept in
-the state file until stories drop out of the feed; delete `.cache/` to clear
-them.
+the state file, which only your user account can read, until stories drop out
+of the feed; delete `.cache/` to clear them.
 
 ## About the default feed
 
@@ -141,6 +142,30 @@ headlines and filled-in empty summaries:
 Work happens on `main`. Commit subjects are short, in the imperative mood
 ("Strip the WordPress footer from feed summaries"), and commits use the
 GitHub noreply address.
+
+## Built with
+
+- [Python](https://www.python.org) (PSF-2.0)
+- [Flask](https://github.com/pallets/flask) (BSD-3-Clause) for the page
+- [feedparser](https://github.com/kurtmckee/feedparser) (BSD-2-Clause) to read
+  the feed
+- [requests](https://github.com/psf/requests) (Apache-2.0) to fetch it and to
+  talk to Ollama
+- [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python)
+  (Apache-2.0) to call Claude
+- [pydantic](https://github.com/pydantic/pydantic) (MIT) to check the
+  translations that come back
+- [Ollama](https://github.com/ollama/ollama) (MIT) and
+  [Qwen 3.5](https://ollama.com/library/qwen3.5) (Apache-2.0), optionally, for
+  local translation
+- [pytest](https://github.com/pytest-dev/pytest) (MIT),
+  [ruff](https://github.com/astral-sh/ruff) (MIT) and
+  [pip-audit](https://github.com/pypa/pip-audit) (Apache-2.0) for development
+
+The packages these pull in are all under MIT, BSD, Apache-2.0, PSF-2.0 or
+MPL-2.0 (certifi, used unmodified) licenses.
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) lists every one with its
+version and license.
 
 ## License
 

@@ -354,6 +354,15 @@ def test_state_survives_a_restart_so_timing_is_kept(state, monkeypatch):
     assert all(item["me_title"] for item in restored["items"])
 
 
+def test_state_file_is_private_to_its_owner(state):
+    olde.STATE_PATH.write_text("{}", encoding="utf-8")
+    olde.STATE_PATH.chmod(0o664)
+
+    olde.save_state(state)
+
+    assert olde.STATE_PATH.stat().st_mode & 0o777 == 0o600
+
+
 def test_defaults_to_haiku_without_server_side_fallback(state, monkeypatch):
     use_feed(monkeypatch, http_response(content=rss()))
     claude = use_claude(monkeypatch)

@@ -143,6 +143,8 @@ def save_state(state):
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     temp_path = STATE_PATH.with_suffix(".tmp")
     temp_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+    # Only the owner needs to read or write the state, whatever the umask allows.
+    temp_path.chmod(0o600)
     os.replace(temp_path, STATE_PATH)
 
 
