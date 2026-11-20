@@ -2,4 +2,4 @@
 httpx2==2.16.0
 pip-audit==2.10.1
 pytest==9.2.0
-ruff==0.17.4
+ruff==0.17.5
