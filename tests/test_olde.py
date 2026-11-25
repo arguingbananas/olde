@@ -1,4 +1,5 @@
 import json
+import socket
 import sys
 import threading
 from pathlib import Path
@@ -90,9 +91,26 @@ class FakeClaude:
         )
 
 
-@pytest.fixture
-def state(tmp_path, monkeypatch):
+@pytest.fixture(autouse=True)
+def isolated(tmp_path, monkeypatch):
+    """Ignore settings from the developer's shell and refuse every real connection."""
+    monkeypatch.setattr(olde, "FEED_URL", "https://feed.example/rss")
+    monkeypatch.setattr(olde, "PROVIDER", "claude")
+    monkeypatch.setattr(olde, "MODEL", olde.DEFAULT_MODELS["claude"])
+    monkeypatch.setattr(olde, "OLLAMA_URL", "http://localhost:11434")
     monkeypatch.setattr(olde, "STATE_PATH", tmp_path / "state.json")
+
+    def refuse(*args, **kwargs):
+        # pytest.fail is not an Exception, so the app's error handling can't swallow it.
+        pytest.fail(f"a test tried to reach the network {args[-1:]}; use the fakes instead")
+
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
+
+
+@pytest.fixture
+def state():
     return olde.new_state()
 
 
@@ -361,6 +379,11 @@ def test_state_file_is_private_to_its_owner(state):
     olde.save_state(state)
 
     assert olde.STATE_PATH.stat().st_mode & 0o777 == 0o600
+
+
+def test_a_real_connection_fails_the_test(state):
+    with pytest.raises(pytest.fail.Exception, match="use the fakes"):
+        olde.fetch_feed(state, NOW)
 
 
 def test_defaults_to_haiku_without_server_side_fallback(state, monkeypatch):

@@ -27,6 +27,8 @@ python3 -m venv .venv
 .venv/bin/python -m pytest                      # full test suite, a few seconds
 .venv/bin/ruff check .                          # lint
 .venv/bin/ruff format .                         # format (100 columns)
+.venv/bin/actionlint                            # lint the GitHub workflows
+.venv/bin/zizmor --offline .github/workflows    # workflow security check
 .venv/bin/pip-audit -r requirements-dev.txt     # dependency vulnerability scan
 .venv/bin/python scripts/check_translations.py  # translation quality check (paid)
 ```
@@ -40,7 +42,8 @@ prompt or the model.
 - Secrets and personal data never go in code, logs, commits, the state file or
   this file. Don't print or echo API keys.
 - Tests must never contact the live feed or a paid API; use the fakes in
-  `tests/test_olde.py`.
+  `tests/test_olde.py`. The suite blocks real network connections, so a
+  missing fake fails the test.
 - Don't fetch the live feed during development unless asked. To try the app,
   serve a saved copy locally (`python3 -m http.server`), point `FEED_URL` at it,
   and use a separate `OLDE_STATE` file.
@@ -54,6 +57,7 @@ prompt or the model.
   places, numbers and dates are kept exactly, and modern terms such as
   "artificial intelligence" stay as written.
 - Work on `main`. Commit subjects are short and in the imperative mood.
+  Commits written with an AI assistant end with a `Co-Authored-By:` trailer.
 
 ## Files
 
@@ -84,6 +88,8 @@ ROADMAP, packaging or Docker, benchmarks.
 - `.venv/bin/python -m pytest` passes.
 - `.venv/bin/ruff check .` is clean and `.venv/bin/ruff format --check .`
   reports nothing to change.
+- `.venv/bin/actionlint` and `.venv/bin/zizmor --offline .github/workflows`
+  report nothing.
 - `.venv/bin/pip-audit -r requirements-dev.txt` shows no new high-severity
   findings.
 - The README is updated if behavior, settings or commands changed.
