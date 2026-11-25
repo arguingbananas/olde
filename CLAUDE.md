@@ -59,7 +59,9 @@ prompt or the model.
 - Translations must stay faithful: no added, dropped or changed facts. Names,
   places, numbers and dates are kept exactly, and modern terms such as
   "artificial intelligence" stay as written.
-- Work on `main`. Commit subjects are short and in the imperative mood.
+- Work on a short-lived branch and open a pull request; `main` only accepts
+  changes through a PR whose CI has passed, and squash-merge is used.
+  Commit subjects are short and in the imperative mood.
   Commits written with an AI assistant end with a `Co-Authored-By:` trailer.
 
 ## Files
