@@ -201,7 +201,9 @@ headlines and filled-in empty summaries:
 .venv/bin/python scripts/check_translations.py
 ```
 
-Work happens on `main`. Commit subjects are short, in the imperative mood
+Changes go through short-lived branches and pull requests: `main` accepts
+only a pull request whose CI checks have passed, and pull requests are
+squash-merged. Commit subjects are short, in the imperative mood
 ("Strip the WordPress footer from feed summaries"), and commits use the
 GitHub noreply address. Commits written with an AI assistant end with a
 `Co-Authored-By:` trailer naming it.
