@@ -15,6 +15,34 @@ It can also tell the news in the Middle English of Chaucer instead (see
 It's a personal project for one reader, running on their own computer and
 viewed in a browser. It isn't built to be hosted for the public.
 
+## Example
+
+One White House release from November 2026, as the feed gives it and as Olde
+showed it in each style. Both translations are by Claude Haiku
+(`claude-haiku-5-5`), copied unedited from Olde's saved state. The "[…]" is
+where the feed's own excerpt ends. Read the
+[original release](https://www.whitehouse.gov/briefings-statements/2026/11/quad-leaders-summit-joint-press-release/)
+on whitehouse.gov.
+
+**Modern English (the feed)**
+
+> **Quad Leaders’ Summit Joint Press Release**\
+> On November 17, 2026 — President Donald J. Trump of the United States, Prime Minister Anthony Albanese of Australia, Prime Minister Narendra Modi of India, and Prime Minister Takaichi Sanae of Japan — met for a Quad Leaders’ Summit in Manila. This year marks nearly a decade since the Quad was revived and the tenth […]
+
+**King James English**
+
+> **Joint Press Release of the Quad Leaders’ Summit**\
+> On November 17, 2026, did President Donald J. Trump of the United States, Prime Minister Anthony Albanese of Australia, Prime Minister Narendra Modi of India, and Prime Minister Takaichi Sanae of Japan meet together for a Quad Leaders’ Summit in Manila. This year marketh nearly a decade since the Quad was revived, and the tenth […]
+
+**Chaucer's English (`OLDE_STYLE=chaucer`)**
+
+> **The Joint Press Release of the Quad Leaders’ Summit**\
+> Upon November 17, 2026, President Donald J. Trump of the United States, Prime Minister Anthony Albanese of Australia, Prime Minister Narendra Modi of India, and Prime Minister Takaichi Sanae of Japan, met for a Quad Leaders’ Summit in Manila. This year marketh nearly a decade sith the Quad was revived, and the tenth […]
+
+The names, the date and the place are copied exactly in both styles, as
+Olde's faithfulness rules require. This is an unofficial machine translation,
+not affiliated with or endorsed by the White House.
+
 ## Run it
 
 Olde needs Python 3.12 or newer, and stops with a message on anything older.
