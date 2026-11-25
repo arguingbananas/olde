@@ -2,15 +2,18 @@
 
 Olde is a small Flask app that reads one English-language RSS feed (White House
 news releases by default) and shows every headline and summary in imitation
-King James English.
+King James English, or in Chaucer's Middle English with `OLDE_STYLE=chaucer`.
 Translation is done by Claude Haiku (`claude-haiku-5-5`, the default) or by a
 local Ollama model (`qwen3.5:4b`). It's a personal project for one reader on
 their own computer, bound to 127.0.0.1, and not meant for public hosting.
 
 - Input: the feed, fetched politely by one background worker.
-- Output: a page at http://127.0.0.1:5000 with the King James text, the modern
+- Output: a page at http://127.0.0.1:5000 with the old-English text, the modern
   text behind a toggle, and links to the original stories.
-- State: feed metadata and translations are saved in `.cache/olde.json`.
+- State: feed metadata and translations, saved by style, are kept in
+  `.cache/olde.json`. The King James prompt (`KJV_PROMPT`) and the shared rules
+  (`TRANSLATION_RULES`) are the tested baseline; run the translation check for
+  each style a prompt change touches.
 
 ## Environment
 

@@ -97,6 +97,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(olde, "FEED_URL", "https://feed.example/rss")
     monkeypatch.setattr(olde, "PROVIDER", "claude")
     monkeypatch.setattr(olde, "MODEL", olde.DEFAULT_MODELS["claude"])
+    monkeypatch.setattr(olde, "STYLE", "kjv")
     monkeypatch.setattr(olde, "OLLAMA_URL", "http://localhost:11434")
     monkeypatch.setattr(olde, "STATE_PATH", tmp_path / "state.json")
 
@@ -133,7 +134,9 @@ def test_keeps_and_translates_every_entry(state, monkeypatch):
     olde.refresh(state, now=NOW)
 
     assert len(state["items"]) == 60
-    assert all(item["me_title"].startswith("Olde Story") for item in state["items"])
+    assert all(
+        olde.translation(item)["me_title"].startswith("Olde Story") for item in state["items"]
+    )
     assert claude.batch_sizes == [25, 25, 10]
 
 
@@ -310,7 +313,7 @@ def test_refusal_affects_only_the_refused_story(state, monkeypatch):
 
     olde.refresh(state, now=NOW)
 
-    by_title = {item["title"]: item for item in state["items"]}
+    by_title = {item["title"]: olde.translation(item) for item in state["items"]}
     assert by_title["Story 2"]["untranslatable"] is True
     assert by_title["Story 2"]["me_title"] is None
     for title in ("Story 0", "Story 1", "Story 3"):
@@ -325,13 +328,13 @@ def test_api_failure_keeps_originals_and_retries_next_poll(state, monkeypatch):
     olde.refresh(state, now=NOW)
 
     assert state["feed"]["translation_error"] == "Could not reach Claude."
-    assert all(item["me_title"] is None for item in state["items"])
+    assert all(olde.translation(item)["me_title"] is None for item in state["items"])
 
     use_claude(monkeypatch)
     olde.refresh(state, now=NOW + olde.MIN_POLL_SECONDS)
 
     assert state["feed"]["translation_error"] is None
-    assert all(item["me_title"] for item in state["items"])
+    assert all(olde.translation(item)["me_title"] for item in state["items"])
 
 
 def test_unknown_or_retired_model_says_to_set_olde_model(state, monkeypatch):
@@ -345,7 +348,7 @@ def test_unknown_or_retired_model_says_to_set_olde_model(state, monkeypatch):
 
     assert olde.MODEL in state["feed"]["translation_error"]
     assert "OLDE_MODEL" in state["feed"]["translation_error"]
-    assert all(item["me_title"] is None for item in state["items"])
+    assert all(olde.translation(item)["me_title"] is None for item in state["items"])
 
 
 def test_missing_credentials_show_a_helpful_message(state, monkeypatch):
@@ -369,7 +372,54 @@ def test_state_survives_a_restart_so_timing_is_kept(state, monkeypatch):
     restored = olde.load_state()
 
     assert restored["feed"]["next_fetch_at"] == NOW + olde.MIN_POLL_SECONDS
-    assert all(item["me_title"] for item in restored["items"])
+    assert all(olde.translation(item)["me_title"] for item in restored["items"])
+
+
+def test_chaucer_style_uses_its_own_prompt(state, monkeypatch):
+    monkeypatch.setattr(olde, "STYLE", "chaucer")
+    use_feed(monkeypatch, http_response(content=rss()))
+    claude = use_claude(monkeypatch)
+
+    olde.refresh(state, now=NOW)
+
+    system = claude.requests[0]["system"]
+    assert system.startswith(olde.CHAUCER_PROMPT)
+    assert "King James" not in system
+    assert system.endswith(olde.TRANSLATION_RULES)
+
+
+def test_switching_style_keeps_the_other_styles_translations(state, monkeypatch):
+    use_feed(monkeypatch, http_response(content=rss()))
+    claude = use_claude(monkeypatch)
+    olde.refresh(state, now=NOW)
+
+    monkeypatch.setattr(olde, "STYLE", "chaucer")
+    olde.translate_pending(state)
+
+    assert claude.batch_sizes == [2, 2]
+    for item in state["items"]:
+        assert olde.translation(item, "kjv")["me_title"] == f"Olde {item['title']}"
+        assert olde.translation(item, "chaucer")["me_title"] == f"Olde {item['title']}"
+
+
+def test_translations_saved_before_styles_become_king_james(state):
+    old_items = [
+        {"key": "a", "title": "A", "summary": "", "link": "", "published": "",
+         "me_title": "Lo, A", "me_summary": "", "untranslatable": False},
+        {"key": "b", "title": "B", "summary": "", "link": "", "published": "",
+         "me_title": None, "me_summary": None, "untranslatable": False},
+    ]  # fmt: skip
+    olde.STATE_PATH.write_text(json.dumps({**state, "items": old_items}), encoding="utf-8")
+
+    restored = olde.load_state()
+
+    first, second = restored["items"]
+    assert first["translations"] == {
+        "kjv": {"me_title": "Lo, A", "me_summary": "", "untranslatable": False}
+    }
+    assert "me_title" not in first
+    assert second["translations"] == {}
+    assert olde.is_pending(second)
 
 
 def test_state_file_is_private_to_its_owner(state):
@@ -453,8 +503,8 @@ def test_ollama_translates_with_schema_and_system_prompt(state, monkeypatch):
     assert payload["stream"] is False
     assert payload["think"] is False
     assert payload["format"] == olde.TRANSLATION_SCHEMA
-    assert payload["messages"][0] == {"role": "system", "content": olde.SYSTEM_PROMPT}
-    assert [item["me_title"] for item in state["items"]] == [
+    assert payload["messages"][0] == {"role": "system", "content": olde.system_prompt()}
+    assert [olde.translation(item)["me_title"] for item in state["items"]] == [
         "Lo, Story 0",
         "Lo, Story 1",
         "Lo, Story 2",
@@ -470,7 +520,7 @@ def test_ollama_missing_model_says_how_to_pull_it(state, monkeypatch):
     assert state["feed"]["translation_error"] == (
         "Ollama has no model qwen3.5:4b; run: ollama pull qwen3.5:4b"
     )
-    assert all(item["me_title"] is None for item in state["items"])
+    assert all(olde.translation(item)["me_title"] is None for item in state["items"])
 
 
 def test_ollama_not_running_is_reported(state, monkeypatch):
@@ -497,7 +547,7 @@ def test_ollama_output_cut_off_splits_the_batch(state, monkeypatch):
 
     olde.refresh(state, now=NOW)
 
-    assert all(item["me_title"].startswith("Lo, ") for item in state["items"])
+    assert all(olde.translation(item)["me_title"].startswith("Lo, ") for item in state["items"])
 
 
 def test_page_view_never_fetches_and_shows_translation_and_attribution(state, monkeypatch):
@@ -518,7 +568,19 @@ def test_page_view_never_fetches_and_shows_translation_and_attribution(state, mo
     assert "Summary 0" in body
     assert 'href="https://example.com/0"' in body
     assert "Test News" in body
-    assert "unofficial machine translation" in body
+    assert "unofficial machine translation into imitation King James English" in body
+    assert "English of King James" in body
+
+
+def test_page_names_the_chaucer_style(state, monkeypatch):
+    monkeypatch.setattr(olde, "STYLE", "chaucer")
+    monkeypatch.setattr(olde, "shared_state", state)
+
+    body = olde.app.test_client().get("/").get_data(as_text=True)
+
+    assert "English of Chaucer" in body
+    assert "imitation Chaucerian Middle English" in body
+    assert "King James" not in body
 
 
 def test_unsafe_links_are_dropped_and_markup_is_escaped(state, monkeypatch):

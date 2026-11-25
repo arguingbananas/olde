@@ -9,6 +9,9 @@ stays easy to read. Each story links to the original, and the modern English
 text is one click away. This is imitation Early Modern English for fun, not
 historically exact scholarship.
 
+It can also tell the news in the Middle English of Chaucer instead (see
+[In Chaucer's English](#in-chaucers-english)).
+
 It's a personal project for one reader, running on their own computer and
 viewed in a browser. It isn't built to be hosted for the public.
 
@@ -31,7 +34,7 @@ export ANTHROPIC_API_KEY=...
 ```
 
 Then open http://127.0.0.1:5000. Stories appear in modern English first and
-switch to King James English as their translations finish.
+switch to the old English as their translations finish.
 
 With Claude Haiku, translation costs about $0.00025 per story, measured on real
 news feeds; the high effort setting Olde uses adds about 30%, for roughly
@@ -62,6 +65,22 @@ Translations are saved by story, so switching provider keeps the ones you
 already have. To compare providers, give each its own state file, for example
 `OLDE_STATE=.cache/ollama.json`, and run one at a time.
 
+### In Chaucer's English
+
+```
+OLDE_STYLE=chaucer .venv/bin/python olde.py
+```
+
+This tells the news in the Middle English of The Canterbury Tales: words such
+as "eek", "ful", "certes" and "anon", "-en" endings on plural verbs and "y-"
+before past participles, with modern spelling for ordinary words so it stays
+readable. The same faithfulness rules apply as for King James English.
+
+Translations are saved by style, so switching back and forth keeps both. Only
+the style you run is translated, so the cost stays the same. Stories you
+already have in one style are translated again the first time you run the
+other.
+
 ## Settings
 
 | Variable | Default | Purpose |
@@ -69,6 +88,7 @@ already have. To compare providers, give each its own state file, for example
 | `FEED_URL` | White House news releases | The RSS or Atom feed to read. Feeds that declare a non-English language are rejected. |
 | `OLDE_PROVIDER` | `claude` | `claude` or `ollama`. |
 | `OLDE_MODEL` | `claude-haiku-5-5`, or `qwen3.5:4b` with Ollama | The model used for translation. |
+| `OLDE_STYLE` | `kjv` | `kjv` for King James English or `chaucer` for Chaucer's Middle English. |
 | `OLDE_OLLAMA_URL` | `http://localhost:11434` | Where the Ollama server is running. |
 | `OLDE_STATE` | `.cache/olde.json` in the project folder | Where feed state and translations are saved. A relative path is taken from the folder you start Olde in. |
 
