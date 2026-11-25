@@ -59,7 +59,8 @@ def main():
         for problem in problems:
             print(f"      - {problem}")
 
-    print(f"\n{olde.PROVIDER} {olde.MODEL}: {len(items) - failures}/{len(items)} passed")
+    passed = len(items) - failures
+    print(f"\n{olde.STYLE} via {olde.PROVIDER} {olde.MODEL}: {passed}/{len(items)} passed")
     return 1 if failures else 0
 
 
