@@ -14,9 +14,14 @@ viewed in a browser. It isn't built to be hosted for the public.
 
 ## Run it
 
-Olde needs Python 3.12 or newer. It's developed and tested on Linux (Linux Mint
-22.3) and should run anywhere Python does. Only the Ollama option cares about
-hardware.
+Olde needs Python 3.12 or newer, and stops with a message on anything older.
+It's developed and tested on Linux (Linux Mint 22.3) and should run anywhere
+Python does. Only the Ollama option cares about hardware.
+
+Python 3.12 gets security fixes until October 2028, and Linux Mint 22.3 is
+supported until April 2029. Before then, move the virtualenv and the CI
+workflow (`python-version` in `.github/workflows/ci.yml`) to a newer Python,
+and raise the minimum in this README, `olde.py` and `pyproject.toml` together.
 
 ```
 python3 -m venv .venv
@@ -65,7 +70,7 @@ already have. To compare providers, give each its own state file, for example
 | `OLDE_PROVIDER` | `claude` | `claude` or `ollama`. |
 | `OLDE_MODEL` | `claude-haiku-5-5`, or `qwen3.5:4b` with Ollama | The model used for translation. |
 | `OLDE_OLLAMA_URL` | `http://localhost:11434` | Where the Ollama server is running. |
-| `OLDE_STATE` | `.cache/olde.json` | Where feed state and translations are saved. |
+| `OLDE_STATE` | `.cache/olde.json` in the project folder | Where feed state and translations are saved. A relative path is taken from the folder you start Olde in. |
 
 `.env.example` lists them all. Copy it to `.env`, fill it in, and load it with
 `set -a; . ./.env; set +a` before starting Olde. `.env` is git-ignored.
@@ -113,19 +118,28 @@ to `127.0.0.1` so it stays private by default.
 
 ## Development
 
-Install the development tools, then run the tests, the linter, the formatter
-and the dependency vulnerability scan:
+Install the development tools, then run the tests, the linter, the formatter,
+the workflow checks and the dependency vulnerability scan:
 
 ```
 .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m pytest
 .venv/bin/ruff check .
 .venv/bin/ruff format .
+.venv/bin/actionlint
+.venv/bin/zizmor --offline .github/workflows
 .venv/bin/pip-audit -r requirements-dev.txt
 ```
 
+Installing `actionlint-py` downloads the actionlint program from its GitHub
+releases and checks it against a checksum pinned in the package. CI runs
+zizmor online, so it can also look up the pinned actions; `--offline` skips
+those lookups.
+
 The tests use fake feed and model servers, so they never contact the live feed or a
-paid API. The full suite takes a few seconds; run it after every change.
+paid API. They refuse any real network connection and ignore Olde's settings in
+your shell, so they give the same result on any machine. The full suite takes a
+few seconds; run it after every change.
 GitHub Actions runs the same checks on every push, and Dependabot proposes
 dependency updates weekly. Bug-fix (patch) updates merge themselves once those
 checks pass; minor and major updates wait for a person to review them.
@@ -141,7 +155,8 @@ headlines and filled-in empty summaries:
 
 Work happens on `main`. Commit subjects are short, in the imperative mood
 ("Strip the WordPress footer from feed summaries"), and commits use the
-GitHub noreply address.
+GitHub noreply address. Commits written with an AI assistant end with a
+`Co-Authored-By:` trailer naming it.
 
 ## Built with
 
@@ -159,8 +174,11 @@ GitHub noreply address.
   [Qwen 3.5](https://ollama.com/library/qwen3.5) (Apache-2.0), optionally, for
   local translation
 - [pytest](https://github.com/pytest-dev/pytest) (MIT),
-  [ruff](https://github.com/astral-sh/ruff) (MIT) and
-  [pip-audit](https://github.com/pypa/pip-audit) (Apache-2.0) for development
+  [ruff](https://github.com/astral-sh/ruff) (MIT),
+  [pip-audit](https://github.com/pypa/pip-audit) (Apache-2.0),
+  [actionlint](https://github.com/rhysd/actionlint) (MIT, installed through
+  [actionlint-py](https://github.com/Mateusz-Grzelinski/actionlint-py), MIT) and
+  [zizmor](https://github.com/zizmorcore/zizmor) (MIT) for development
 
 The packages these pull in are all under MIT, BSD, Apache-2.0, PSF-2.0 or
 MPL-2.0 (certifi, used unmodified) licenses.

@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import sys
 import threading
 import time
 from email.utils import parsedate_to_datetime
@@ -21,6 +22,10 @@ import feedparser
 import requests
 from flask import Flask, render_template
 from pydantic import BaseModel, ValidationError
+
+# ruff assumes the target version, but this check is for people who don't have it.
+if sys.version_info < (3, 12):  # noqa: UP036
+    sys.exit(f"Olde needs Python 3.12 or newer (this is {sys.version.split()[0]}).")
 
 FEED_URL = os.environ.get("FEED_URL", "https://www.whitehouse.gov/news/feed/")
 PROVIDER = os.environ.get("OLDE_PROVIDER", "claude")

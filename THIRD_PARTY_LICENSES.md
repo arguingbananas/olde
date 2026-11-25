@@ -49,6 +49,8 @@ as dependencies are updated; the licenses rarely do.
 | [pytest](https://github.com/pytest-dev/pytest) | 9.2.0 | MIT |
 | [ruff](https://github.com/astral-sh/ruff) | 0.17.5 | MIT |
 | [pip-audit](https://github.com/pypa/pip-audit) | 2.10.1 | Apache-2.0 |
+| [zizmor](https://github.com/zizmorcore/zizmor) | 1.33.1 | MIT |
+| [actionlint-py](https://github.com/Mateusz-Grzelinski/actionlint-py) | 1.7.12.25 | MIT |
 | [boolean.py](https://github.com/bastikr/boolean.py) | 5.0 | BSD-2-Clause |
 | [CacheControl](https://github.com/psf/cachecontrol) | 0.14.4 | Apache-2.0 |
 | [cyclonedx-python-lib](https://github.com/CycloneDX/cyclonedx-python-lib) | 11.12.0 | Apache-2.0 |
@@ -80,6 +82,7 @@ as dependencies are updated; the licenses rarely do.
 | [Python](https://www.python.org) | Runs Olde | PSF-2.0 |
 | [Ollama](https://github.com/ollama/ollama) | Optional local translation | MIT |
 | [Qwen 3.5](https://ollama.com/library/qwen3.5) (`qwen3.5:4b`) | Optional local model | Apache-2.0 |
+| [actionlint](https://github.com/rhysd/actionlint) 1.7.12 | Workflow checks (downloaded by actionlint-py) | MIT |
 | [actions/checkout](https://github.com/actions/checkout) | CI | MIT |
 | [actions/setup-python](https://github.com/actions/setup-python) | CI | MIT |
 | [dependabot/fetch-metadata](https://github.com/dependabot/fetch-metadata) | Dependabot auto-merge | MIT |

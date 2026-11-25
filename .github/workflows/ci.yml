@@ -25,6 +25,12 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      # Workflow checks: actionlint for mistakes, zizmor for security problems.
+      # zizmor uses the read-only token to look up the pinned actions.
+      - run: actionlint
+      - run: zizmor .github/workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
       # The tests use fake feed and model servers, so CI needs no API key.
       - run: python -m pytest
       - run: pip-audit -r requirements-dev.txt

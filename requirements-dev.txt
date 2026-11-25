@@ -1,5 +1,7 @@
 -r requirements.txt
+actionlint-py==1.7.12.25
 httpx2==2.16.0
 pip-audit==2.10.1
 pytest==9.2.0
 ruff==0.17.5
+zizmor==1.33.1

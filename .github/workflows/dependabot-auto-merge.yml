@@ -1,8 +1,9 @@
 name: Dependabot auto-merge
 
-# pull_request_target gives the token write access. That is safe here because
-# no step checks out or runs code from the pull request.
-on: pull_request_target
+# GitHub's documented pattern: on Dependabot's own pull requests, a plain
+# pull_request run gets the write permissions declared below. It avoids
+# pull_request_target, which runs with write access on any pull request.
+on: pull_request
 
 permissions:
   contents: write

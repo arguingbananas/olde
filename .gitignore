@@ -6,3 +6,9 @@ __pycache__/
 .env
 .ruff_cache/
 CLAUDE.local.md
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
